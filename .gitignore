@@ -2,6 +2,6 @@ vendor
 main
 .idea
 .vscode
-.env
+#.env
 logs
 minio
