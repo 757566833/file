@@ -6,7 +6,7 @@ services:
     command: server /data --console-address ":${MINIO_CONSOLE}"
     ports:
       - ${MINIO_CONSOLE}:${MINIO_CONSOLE}
-      - ${MINIO_PORT}:${MINIO_PORT}
+      - ${MINIO_PORT}:9000
     restart: always
     volumes:
       - ./minio/data:/data
