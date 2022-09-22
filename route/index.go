@@ -24,6 +24,7 @@ func CORSMiddleware() gin.HandlerFunc {
 func InitRouter() *gin.Engine {
 	router := gin.Default()
 	router.Use(CORSMiddleware())
+	router.GET("/all/:buket", services.All)
 	router.POST("/upload/:buket", services.Upload)
 	router.GET("/preview/:buket/:file", services.Preview)
 	router.GET("/download/:buket/:file", services.Download)

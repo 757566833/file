@@ -3,12 +3,12 @@ package db
 import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"log"
 	"os"
 	"strconv"
 )
 
 var MinIoClient *minio.Client
+var MinIoCore *minio.Core
 
 func InitDB() *minio.Client {
 	MinIoUrl := os.Getenv("MINIO_URL")
@@ -30,9 +30,19 @@ func InitDB() *minio.Client {
 	})
 
 	if err != nil {
-		log.Fatalln(err)
+		os.Exit(1)
 	}
 	MinIoClient = minioClient
 
+	minIoCore, err := minio.NewCore(MinIoUrl, &minio.Options{
+		Creds:  credentials.NewStaticV4(MinioRootUser, MinioRootPassword, ""),
+		Secure: ssl,
+	})
+
+	if err != nil {
+		os.Exit(1)
+	}
+	MinIoClient = minioClient
+	MinIoCore = minIoCore
 	return minioClient
 }

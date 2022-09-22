@@ -119,6 +119,16 @@ func Download(c *gin.Context) {
 	c.DataFromReader(http.StatusOK, objectInfo.Size, contentJSONType, object, extraHeaders)
 }
 
+func All(c *gin.Context) {
+	buket := c.Param("buket")
+	object, err := db.MinIoCore.ListObjects(buket, "", "", "", 1000)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
+
+	c.JSON(http.StatusOK, object.Contents)
+}
+
 type CreateJsonStruct struct {
 	Name string `json:"name"`
 	Data any    `json:"data"`
