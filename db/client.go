@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"log"
@@ -10,9 +9,6 @@ import (
 )
 
 var MinIoClient *minio.Client
-
-var BuketName = os.Getenv("BUKET_NAME")
-var Region = os.Getenv("Region")
 
 func InitDB() *minio.Client {
 	MinIoUrl := os.Getenv("MINIO_URL")
@@ -34,18 +30,6 @@ func InitDB() *minio.Client {
 		log.Fatalln(err)
 	}
 	MinIoClient = minioClient
-	bucketName := BuketName
-
-	exists, err := minioClient.BucketExists(context.Background(), bucketName)
-
-	if err == nil && exists {
-		log.Printf("We already own %s\n", bucketName)
-	} else {
-		op := new(minio.MakeBucketOptions)
-		op.Region = Region
-
-		err = minioClient.MakeBucket(context.Background(), bucketName, *op)
-	}
 
 	return minioClient
 }

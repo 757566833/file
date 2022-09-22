@@ -12,10 +12,32 @@ import (
 	"net/http"
 )
 
+const Region = "local"
+
 const contentJSONType = "application/json"
+
+func checkBuket(buket string) error {
+	exists, err := db.MinIoClient.BucketExists(context.Background(), buket)
+	if err == nil && exists {
+		// 已存在
+	} else {
+		op := new(minio.MakeBucketOptions)
+		op.Region = Region
+
+		err = db.MinIoClient.MakeBucket(context.Background(), buket, *op)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func Upload(c *gin.Context) {
 	buket := c.Param("buket")
+	err := checkBuket(buket)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
 	f, err := c.FormFile("file")
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -86,6 +108,10 @@ type CreateJsonStruct struct {
 
 func CreateJson(c *gin.Context) {
 	buket := c.Param("buket")
+	err := checkBuket(buket)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
 	var requestBody CreateJsonStruct
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -114,6 +140,10 @@ func CreateJson(c *gin.Context) {
 }
 func ForceJson(c *gin.Context) {
 	buket := c.Param("buket")
+	err := checkBuket(buket)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
 	var requestBody CreateJsonStruct
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
