@@ -30,12 +30,12 @@ func Upload(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
 	info, err := db.MinIoClient.PutObject(context.Background(), buket, f.Filename, io, f.Size, minio.PutObjectOptions{ContentType: _type})
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//}
-
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
 	c.IndentedJSON(http.StatusOK, info)
 }
+
 func Preview(c *gin.Context) {
 	buket := c.Param("buket")
 	file := c.Param("file")
@@ -93,8 +93,6 @@ func CreateJson(c *gin.Context) {
 	name := requestBody.Name
 	_object, err := db.MinIoClient.GetObject(context.Background(), buket, name, minio.GetObjectOptions{})
 	defer _object.Close()
-	fmt.Println(err)
-	fmt.Println(_object)
 	if err == nil && _object != nil {
 		c.IndentedJSON(http.StatusBadRequest, name+" existed")
 		return
