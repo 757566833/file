@@ -3,13 +3,15 @@ package main
 import (
 	"file/db"
 	"file/route"
+	"github.com/joho/godotenv"
 	"os"
 )
 
-var BuketName = os.Getenv("BUKET_NAME")
-var Region = os.Getenv("BUKET_NAME")
-
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		os.Exit(1)
+	}
 	db.InitDB()
 	ExplorerServerPort := os.Getenv("EXPLORER_SERVER_PORT")
 	//ExplorerServerPort := "8090"

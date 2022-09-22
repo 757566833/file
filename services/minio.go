@@ -5,38 +5,45 @@ import (
 	"context"
 	"encoding/json"
 	"file/db"
+	"file/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	"net/http"
-	"os"
 )
 
-const ContentJpgType = "application/jpg"
 const contentJSONType = "application/json"
 
-var BuketName = os.Getenv("BUKET_NAME")
-
 func Upload(c *gin.Context) {
-	// todo
-	//objectName := "222.jpg"
-	//filePath := "/go/test/222.jpg"
-	//
-	//// Upload the zip file with FPutObject
-	//
-	//n, err := db.MinIoClient.FPutObject(context.Background(), BuketName, objectName, filePath, minio.PutObjectOptions{ContentType: ContentJpgType})
+	buket := c.Param("buket")
+	f, err := c.FormFile("file")
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
+	io, err := f.Open()
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
+	defer io.Close()
+	_type, err := utils.GetFileContentType(io)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
+	info, err := db.MinIoClient.PutObject(context.Background(), buket, f.Filename, io, f.Size, minio.PutObjectOptions{ContentType: _type})
 	//if err != nil {
 	//	fmt.Println(err.Error())
 	//}
-	//c.IndentedJSON(http.StatusOK, n)
+
+	c.IndentedJSON(http.StatusOK, info)
 }
 func Preview(c *gin.Context) {
+	buket := c.Param("buket")
 	file := c.Param("file")
 	if file == "" {
 		c.IndentedJSON(http.StatusBadRequest, "")
 	}
 
-	object, err := db.MinIoClient.GetObject(context.Background(), BuketName, file, minio.GetObjectOptions{})
+	object, err := db.MinIoClient.GetObject(context.Background(), buket, file, minio.GetObjectOptions{})
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
@@ -52,11 +59,12 @@ func Preview(c *gin.Context) {
 
 }
 func Download(c *gin.Context) {
+	buket := c.Param("buket")
 	file := c.Param("file")
 	if file == "" {
 		c.IndentedJSON(http.StatusBadRequest, "")
 	}
-	object, err := db.MinIoClient.GetObject(context.Background(), BuketName, file, minio.GetObjectOptions{})
+	object, err := db.MinIoClient.GetObject(context.Background(), buket, file, minio.GetObjectOptions{})
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
@@ -77,13 +85,13 @@ type CreateJsonStruct struct {
 }
 
 func CreateJson(c *gin.Context) {
-
+	buket := c.Param("buket")
 	var requestBody CreateJsonStruct
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
 	name := requestBody.Name
-	_object, err := db.MinIoClient.GetObject(context.Background(), BuketName, name, minio.GetObjectOptions{})
+	_object, err := db.MinIoClient.GetObject(context.Background(), buket, name, minio.GetObjectOptions{})
 	defer _object.Close()
 	fmt.Println(err)
 	fmt.Println(_object)
@@ -98,7 +106,7 @@ func CreateJson(c *gin.Context) {
 	}
 	_data := bytes.NewReader(str)
 
-	object, err := db.MinIoClient.PutObject(context.Background(), BuketName, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
+	object, err := db.MinIoClient.PutObject(context.Background(), buket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -107,7 +115,7 @@ func CreateJson(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, object)
 }
 func ForceJson(c *gin.Context) {
-
+	buket := c.Param("buket")
 	var requestBody CreateJsonStruct
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -120,7 +128,7 @@ func ForceJson(c *gin.Context) {
 	}
 	_data := bytes.NewReader(str)
 
-	object, err := db.MinIoClient.PutObject(context.Background(), BuketName, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
+	object, err := db.MinIoClient.PutObject(context.Background(), buket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())

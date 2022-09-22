@@ -26,7 +26,7 @@ services:
       - ./:/go
     command: /bin/bash -c "/go/main"
     environment:
-      MINIO_URL: ${MINIO_IP}:${MINIO_PORT}
+      MINIO_URL: ${MINIO_URL}
       USER: ${MINIO_ROOT_USER}
       PASSWORD: ${MINIO_ROOT_PASSWORD}
       EXPLORER_SERVER_PORT: ${EXPLORER_SERVER_PORT}

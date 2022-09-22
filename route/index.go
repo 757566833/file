@@ -24,10 +24,10 @@ func CORSMiddleware() gin.HandlerFunc {
 func InitRouter() *gin.Engine {
 	router := gin.Default()
 	router.Use(CORSMiddleware())
-	//router.POST("/upload", controller.Upload)
-	router.GET("/preview/:file", services.Preview)
-	router.GET("/download", services.Download)
-	router.POST("/create/json", services.CreateJson)
-	router.POST("/force/json", services.ForceJson)
+	router.POST("/upload/:buket", services.Upload)
+	router.GET("/preview/:buket/:file", services.Preview)
+	router.GET("/download/:buket/:file", services.Download)
+	router.POST("/create/json/:buket", services.CreateJson)
+	router.POST("/force/json/:buket", services.ForceJson)
 	return router
 }
