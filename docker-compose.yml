@@ -27,9 +27,8 @@ services:
     command: /bin/bash -c "/go/main"
     environment:
       MINIO_URL: ${MINIO_URL}
-      USER: ${MINIO_ROOT_USER}
-      PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       EXPLORER_SERVER_PORT: ${EXPLORER_SERVER_PORT}
-      SSL: ${SSL}
-      Region: ${Region}
-      BUKET_NAME: ${BUKET_NAME}
+      MINIO_SSL: ${MINIO_SSL}
+

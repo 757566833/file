@@ -12,17 +12,20 @@ var MinIoClient *minio.Client
 
 func InitDB() *minio.Client {
 	MinIoUrl := os.Getenv("MINIO_URL")
-	USER := os.Getenv("USER")
-	PASSWORD := os.Getenv("PASSWORD")
-	SSL := os.Getenv("SSL")
-	ssl, _ := strconv.ParseBool(SSL)
+	MinioRootUser := os.Getenv("MINIO_ROOT_USER")
+	MinioRootPassword := os.Getenv("MINIO_ROOT_PASSWORD")
+	MinioSsl := os.Getenv("MINIO_SSL")
+	ssl, err := strconv.ParseBool(MinioSsl)
+	if err != nil {
+		os.Exit(1)
+	}
 	//MinIoUrl := "127.0.0.1:9000"
 	//USER := "root"
 	//PASSWORD := "123456789"
 	//ssl := false
 	// Initialize minio client object.
 	minioClient, err := minio.New(MinIoUrl, &minio.Options{
-		Creds:  credentials.NewStaticV4(USER, PASSWORD, ""),
+		Creds:  credentials.NewStaticV4(MinioRootUser, MinioRootPassword, ""),
 		Secure: ssl,
 	})
 

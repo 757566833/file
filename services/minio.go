@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	"net/http"
+	"strings"
 )
 
 const Region = "local"
@@ -42,20 +43,29 @@ func Upload(c *gin.Context) {
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
-	io, err := f.Open()
+	fileIo, err := f.Open()
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
-	defer io.Close()
-	_type, err := utils.GetFileContentType(io)
+	_type, err := utils.GetFileContentType(fileIo)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
-	info, err := db.MinIoClient.PutObject(context.Background(), buket, f.Filename, io, f.Size, minio.PutObjectOptions{ContentType: _type})
+
+	defer fileIo.Close()
+
+	name := utils.GetRandomString()
+	split := strings.Split(f.Filename, ".")
+	fmt.Println(split)
+
+	if len(split) > 1 {
+		name = name + "." + split[len(split)-1]
+	}
+	_, err = db.MinIoClient.PutObject(context.Background(), buket, name, fileIo, f.Size, minio.PutObjectOptions{ContentType: _type, UserTags: map[string]string{"filename": f.Filename}})
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
-	c.IndentedJSON(http.StatusOK, info)
+	c.IndentedJSON(http.StatusOK, "/preview/"+buket+"/"+name)
 }
 
 func Preview(c *gin.Context) {
@@ -77,7 +87,10 @@ func Preview(c *gin.Context) {
 	extraHeaders := map[string]string{
 		"Content-Disposition": "inline",
 	}
-	c.DataFromReader(http.StatusOK, objectInfo.Size, contentJSONType, object, extraHeaders)
+	for key, value := range objectInfo.Metadata {
+		extraHeaders[key] = strings.Join(value, ";")
+	}
+	c.DataFromReader(http.StatusOK, objectInfo.Size, objectInfo.Metadata.Get("Content-Type"), object, extraHeaders)
 
 }
 func Download(c *gin.Context) {
@@ -94,9 +107,14 @@ func Download(c *gin.Context) {
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
+
 	defer object.Close()
+
 	extraHeaders := map[string]string{
 		"Content-Disposition": "attachment; filename=" + file,
+	}
+	for key, value := range objectInfo.Metadata {
+		extraHeaders[key] = strings.Join(value, ";")
 	}
 	c.DataFromReader(http.StatusOK, objectInfo.Size, contentJSONType, object, extraHeaders)
 }
