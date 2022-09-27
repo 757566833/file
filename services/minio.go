@@ -116,7 +116,7 @@ func Download(c *gin.Context) {
 	for key, value := range objectInfo.Metadata {
 		extraHeaders[key] = strings.Join(value, ";")
 	}
-	c.DataFromReader(http.StatusOK, objectInfo.Size, contentJSONType, object, extraHeaders)
+	c.DataFromReader(http.StatusOK, objectInfo.Size, objectInfo.Metadata.Get("Content-Type"), object, extraHeaders)
 }
 
 func All(c *gin.Context) {
