@@ -17,7 +17,10 @@ func GetFileContentType(out multipart.File) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	out.Seek(0, io.SeekStart)
+	_, err = out.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", err
+	}
 	// 只识别一部分按规范的 https://github.com/golang/go/issues/47492#issuecomment-891320284
 	contentType := http.DetectContentType(buffer)
 

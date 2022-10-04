@@ -1,8 +1,10 @@
 package db
 
 import (
+	"fmt"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"mime/multipart"
 	"os"
 	"strconv"
 )
@@ -45,4 +47,11 @@ func InitDB() *minio.Client {
 	MinIoClient = minioClient
 	MinIoCore = minIoCore
 	return minioClient
+}
+
+func Close(file multipart.File) {
+	err := file.Close()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }

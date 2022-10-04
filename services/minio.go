@@ -52,7 +52,7 @@ func Upload(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
 
-	defer fileIo.Close()
+	defer db.Close(fileIo)
 
 	name := utils.GetRandomString()
 	split := strings.Split(f.Filename, ".")
@@ -83,7 +83,7 @@ func Preview(c *gin.Context) {
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
-	defer object.Close()
+	defer db.Close(object)
 	extraHeaders := map[string]string{
 		"Content-Disposition": "inline",
 	}
@@ -108,7 +108,7 @@ func Download(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
 
-	defer object.Close()
+	defer db.Close(object)
 
 	extraHeaders := map[string]string{
 		"Content-Disposition": "attachment; filename=" + file,
@@ -146,7 +146,7 @@ func CreateJson(c *gin.Context) {
 	}
 	name := requestBody.Name
 	_object, err := db.MinIoClient.GetObject(context.Background(), buket, name, minio.GetObjectOptions{})
-	defer _object.Close()
+	defer db.Close(_object)
 	if err == nil && _object != nil {
 		c.IndentedJSON(http.StatusBadRequest, name+" existed")
 		return
