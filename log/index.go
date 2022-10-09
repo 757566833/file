@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"go.uber.org/zap"
 	"log"
-	"os"
 )
 
 var Logger *zap.Logger
@@ -31,13 +30,7 @@ func InitLogger() {
 	if err != nil {
 		log.Fatalf("Error build log: %s", err)
 	}
-	defer sync(logger)
+	// 官方文档 没有检测这个方法返回的错误
+	defer logger.Sync()
 	Logger = logger
-}
-
-func sync(logger *zap.Logger) {
-	err := logger.Sync()
-	if err != nil {
-		os.Exit(3)
-	}
 }

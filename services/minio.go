@@ -54,7 +54,7 @@ func Upload(c *gin.Context) {
 
 	defer db.Close(fileIo)
 
-	name := utils.GetRandomString()
+	name := utils.RandStr(32)
 	split := strings.Split(f.Filename, ".")
 	fmt.Println(split)
 
