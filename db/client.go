@@ -2,20 +2,16 @@ package db
 
 import (
 	"fmt"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"mime/multipart"
 	"os"
 	"strconv"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-var MinIoClient *minio.Client
-var MinIoCore *minio.Core
-
-func InitDB() *minio.Client {
+func InitMinioClient(user string, password string) (*minio.Client, *minio.Core, error) {
 	MinIoUrl := os.Getenv("MINIO_URL")
-	MinioRootUser := os.Getenv("MINIO_ROOT_USER")
-	MinioRootPassword := os.Getenv("MINIO_ROOT_PASSWORD")
 	MinioSsl := os.Getenv("MINIO_SSL")
 	ssl, err := strconv.ParseBool(MinioSsl)
 	if err != nil {
@@ -27,26 +23,24 @@ func InitDB() *minio.Client {
 	//ssl := false
 	// Initialize minio client object.
 	minioClient, err := minio.New(MinIoUrl, &minio.Options{
-		Creds:  credentials.NewStaticV4(MinioRootUser, MinioRootPassword, ""),
+		Creds:  credentials.NewStaticV4(user, password, ""),
 		Secure: ssl,
 	})
 
 	if err != nil {
-		os.Exit(1)
+		return nil, nil, err
 	}
-	MinIoClient = minioClient
 
 	minIoCore, err := minio.NewCore(MinIoUrl, &minio.Options{
-		Creds:  credentials.NewStaticV4(MinioRootUser, MinioRootPassword, ""),
+		Creds:  credentials.NewStaticV4(user, password, ""),
 		Secure: ssl,
 	})
 
 	if err != nil {
-		os.Exit(1)
+		return nil, nil, err
 	}
-	MinIoClient = minioClient
-	MinIoCore = minIoCore
-	return minioClient
+
+	return minioClient, minIoCore, nil
 }
 
 func Close(file multipart.File) {

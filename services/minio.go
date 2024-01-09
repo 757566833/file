@@ -7,25 +7,30 @@ import (
 	"file/db"
 	"file/utils"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/minio/minio-go/v7"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/minio/minio-go/v7"
 )
 
 const Region = "local"
 
 const contentJSONType = "application/json"
 
-func checkBuket(buket string) error {
-	exists, err := db.MinIoClient.BucketExists(context.Background(), buket)
+func checkBucket(user string, password string, bucket string) error {
+	client, _, err := db.InitMinioClient(user, password)
+	if err != nil {
+		return err
+	}
+	exists, err := client.BucketExists(context.Background(), bucket)
 	if err == nil && exists {
 		// 已存在
 	} else {
 		op := new(minio.MakeBucketOptions)
 		op.Region = Region
 
-		err = db.MinIoClient.MakeBucket(context.Background(), buket, *op)
+		err = client.MakeBucket(context.Background(), bucket, *op)
 		if err != nil {
 			return err
 		}
@@ -34,22 +39,50 @@ func checkBuket(buket string) error {
 }
 
 func Upload(c *gin.Context) {
-	buket := c.Param("buket")
-	err := checkBuket(buket)
+	bucket := c.Param("bucket")
+	usernameRaw, ok := c.Get("username")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	passwordRaw, ok := c.Get("password")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	username, ok := usernameRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	password, ok := passwordRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	err := checkBucket(username, password, bucket)
 	if err != nil {
+		fmt.Println(1)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	f, err := c.FormFile("file")
 	if err != nil {
+		fmt.Println(2)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	fileIo, err := f.Open()
 	if err != nil {
+		fmt.Println(3)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	_type, err := utils.GetFileContentType(fileIo)
 	if err != nil {
+		fmt.Println(4)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	defer db.Close(fileIo)
@@ -61,27 +94,63 @@ func Upload(c *gin.Context) {
 	if len(split) > 1 {
 		name = name + "." + split[len(split)-1]
 	}
-	_, err = db.MinIoClient.PutObject(context.Background(), buket, name, fileIo, f.Size, minio.PutObjectOptions{ContentType: _type, UserTags: map[string]string{"filename": f.Filename}})
+	client, _, err := db.InitMinioClient(username, password)
 	if err != nil {
+		fmt.Println(5)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
-	c.IndentedJSON(http.StatusOK, "/preview/"+buket+"/"+name)
+	fmt.Println(f.Filename)
+	_, err = client.PutObject(context.Background(), bucket, name, fileIo, f.Size, minio.PutObjectOptions{ContentType: _type})
+	if err != nil {
+		fmt.Println(6)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, "/preview/"+bucket+"/"+name)
 }
 
 func Preview(c *gin.Context) {
-	buket := c.Param("buket")
+	bucket := c.Param("bucket")
 	file := c.Param("file")
 	if file == "" {
 		c.IndentedJSON(http.StatusBadRequest, "")
+		return
 	}
-
-	object, err := db.MinIoClient.GetObject(context.Background(), buket, file, minio.GetObjectOptions{})
+	usernameRaw, ok := c.Get("username")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	passwordRaw, ok := c.Get("password")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	username, ok := usernameRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	password, ok := passwordRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	client, _, err := db.InitMinioClient(username, password)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	object, err := client.GetObject(context.Background(), bucket, file, minio.GetObjectOptions{})
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	objectInfo, err := object.Stat()
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	defer db.Close(object)
 	extraHeaders := map[string]string{
@@ -94,18 +163,46 @@ func Preview(c *gin.Context) {
 
 }
 func Download(c *gin.Context) {
-	buket := c.Param("buket")
+	bucket := c.Param("bucket")
 	file := c.Param("file")
 	if file == "" {
 		c.IndentedJSON(http.StatusBadRequest, "")
+		return
 	}
-	object, err := db.MinIoClient.GetObject(context.Background(), buket, file, minio.GetObjectOptions{})
+	usernameRaw, ok := c.Get("username")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	passwordRaw, ok := c.Get("password")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	username, ok := usernameRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	password, ok := passwordRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	client, _, err := db.InitMinioClient(username, password)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	object, err := client.GetObject(context.Background(), bucket, file, minio.GetObjectOptions{})
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	objectInfo, err := object.Stat()
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	defer db.Close(object)
@@ -120,10 +217,36 @@ func Download(c *gin.Context) {
 }
 
 func All(c *gin.Context) {
-	buket := c.Param("buket")
-	object, err := db.MinIoCore.ListObjects(buket, "", "", "", 1000)
+	bucket := c.Param("bucket")
+	usernameRaw, ok := c.Get("username")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	passwordRaw, ok := c.Get("password")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	username, ok := usernameRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	password, ok := passwordRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	_, minIoCore, err := db.InitMinioClient(username, password)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	object, err := minIoCore.ListObjects(bucket, "", "", "", 1000)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	c.JSON(http.StatusOK, object.Contents)
@@ -135,17 +258,45 @@ type CreateJsonStruct struct {
 }
 
 func CreateJson(c *gin.Context) {
-	buket := c.Param("buket")
-	err := checkBuket(buket)
+	bucket := c.Param("bucket")
+
+	usernameRaw, ok := c.Get("username")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	passwordRaw, ok := c.Get("password")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	username, ok := usernameRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	password, ok := passwordRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	err := checkBucket(username, password, bucket)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	var requestBody CreateJsonStruct
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	name := requestBody.Name
-	_object, err := db.MinIoClient.GetObject(context.Background(), buket, name, minio.GetObjectOptions{})
+	client, _, err := db.InitMinioClient(username, password)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	_object, err := client.GetObject(context.Background(), bucket, name, minio.GetObjectOptions{})
 	defer db.Close(_object)
 	if err == nil && _object != nil {
 		c.IndentedJSON(http.StatusBadRequest, name+" existed")
@@ -155,39 +306,70 @@ func CreateJson(c *gin.Context) {
 	str, err := json.Marshal(data)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	_data := bytes.NewReader(str)
 
-	object, err := db.MinIoClient.PutObject(context.Background(), buket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
+	object, err := client.PutObject(context.Background(), bucket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
 
 	if err != nil {
 		fmt.Println(err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	c.IndentedJSON(http.StatusOK, object)
 }
 func ForceJson(c *gin.Context) {
-	buket := c.Param("buket")
-	err := checkBuket(buket)
+	bucket := c.Param("bucket")
+
+	usernameRaw, ok := c.Get("username")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	passwordRaw, ok := c.Get("password")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	username, ok := usernameRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	password, ok := passwordRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	err := checkBucket(username, password, bucket)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	var requestBody CreateJsonStruct
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	name := requestBody.Name
 	data := requestBody.Data
 	str, err := json.Marshal(data)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	_data := bytes.NewReader(str)
-
-	object, err := db.MinIoClient.PutObject(context.Background(), buket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
+	client, _, err := db.InitMinioClient(username, password)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	object, err := client.PutObject(context.Background(), bucket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	c.IndentedJSON(http.StatusOK, object)
 }

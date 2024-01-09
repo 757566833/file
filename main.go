@@ -1,11 +1,11 @@
 package main
 
 import (
-	"file/db"
 	"file/log"
 	"file/route"
-	"github.com/joho/godotenv"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -14,7 +14,6 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	db.InitDB()
 	ExplorerServerPort := os.Getenv("EXPLORER_SERVER_PORT")
 	//ExplorerServerPort := "8090"
 	router := route.InitRouter()
