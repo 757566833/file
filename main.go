@@ -1,6 +1,7 @@
 package main
 
 import (
+	"file/db"
 	"file/log"
 	"file/route"
 	"os"
@@ -9,8 +10,10 @@ import (
 )
 
 func main() {
-	log.InitLogger()
 	err := godotenv.Load(".env")
+	log.InitLogger()
+	db.InitMinioPreviewClient()
+
 	if err != nil {
 		os.Exit(1)
 	}

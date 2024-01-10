@@ -117,32 +117,8 @@ func Preview(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, "")
 		return
 	}
-	usernameRaw, ok := c.Get("username")
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	passwordRaw, ok := c.Get("password")
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	username, ok := usernameRaw.(string)
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	password, ok := passwordRaw.(string)
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	client, _, err := db.InitMinioClient(username, password)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	object, err := client.GetObject(context.Background(), bucket, file, minio.GetObjectOptions{})
+
+	object, err := db.MinioPreviewClient.GetObject(context.Background(), bucket, file, minio.GetObjectOptions{})
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
@@ -169,32 +145,8 @@ func Download(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, "")
 		return
 	}
-	usernameRaw, ok := c.Get("username")
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	passwordRaw, ok := c.Get("password")
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	username, ok := usernameRaw.(string)
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	password, ok := passwordRaw.(string)
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	client, _, err := db.InitMinioClient(username, password)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	object, err := client.GetObject(context.Background(), bucket, file, minio.GetObjectOptions{})
+
+	object, err := db.MinioPreviewClient.GetObject(context.Background(), bucket, file, minio.GetObjectOptions{})
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
@@ -218,32 +170,7 @@ func Download(c *gin.Context) {
 
 func All(c *gin.Context) {
 	bucket := c.Param("bucket")
-	usernameRaw, ok := c.Get("username")
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	passwordRaw, ok := c.Get("password")
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	username, ok := usernameRaw.(string)
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	password, ok := passwordRaw.(string)
-	if !ok {
-		c.IndentedJSON(http.StatusUnauthorized, "")
-		return
-	}
-	_, minIoCore, err := db.InitMinioClient(username, password)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	object, err := minIoCore.ListObjects(bucket, "", "", "", 1000)
+	object, err := db.MinioPreviewCore.ListObjects(bucket, "", "", "", 1000)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return

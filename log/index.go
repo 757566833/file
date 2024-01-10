@@ -2,25 +2,31 @@ package log
 
 import (
 	"encoding/json"
-	"go.uber.org/zap"
+	"fmt"
 	"log"
+	"os"
+
+	"go.uber.org/zap"
 )
 
 var Logger *zap.Logger
 
 func InitLogger() {
+	Log_Path := os.Getenv("LOG_PATH")
 	logger, _ := zap.NewProduction()
-	rawJSON := []byte(`{
+	fmt.Println(Log_Path)
+	config := fmt.Sprintf(`{
 		"level": "debug",
 		"encoding": "json",
-		"outputPaths": ["stdout", "./logs"],
+		"outputPaths": ["stdout", "%s"],
 		"errorOutputPaths": ["stderr"],
 		"encoderConfig": {
 		  "messageKey": "message",
 		  "levelKey": "level",
 		  "levelEncoder": "lowercase"
 		}
-	  }`)
+	  }`, Log_Path)
+	rawJSON := []byte(config)
 
 	var cfg zap.Config
 	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
