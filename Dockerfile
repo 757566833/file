@@ -9,7 +9,8 @@ COPY . /app/
 
 # 使用go mod下载依赖
 # RUN go mod tidy
-RUN ls
+RUN go env -w GO111MODULE=on
+RUN go env -w GOPROXY=https://goproxy.cn,direct
 # 设置环境变量
 ENV GOARCH=amd64
 ENV GOOS=linux
