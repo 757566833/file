@@ -17,7 +17,7 @@ services:
 
   minioServer:
     container_name: minioServer
-    image: golang:1.18.3
+    image: golang:1.21.5
     ports:
       - ${EXPLORER_SERVER_PORT}:${EXPLORER_SERVER_PORT}
     restart: always
