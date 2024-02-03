@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"file/db"
 	"file/utils"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -38,6 +37,10 @@ func checkBucket(user string, password string, bucket string) error {
 	return nil
 }
 
+type UploadResponse struct {
+	Preview string `json:"preview"`
+}
+
 func Upload(c *gin.Context) {
 	bucket := c.Param("bucket")
 	usernameRaw, ok := c.Get("username")
@@ -62,25 +65,21 @@ func Upload(c *gin.Context) {
 	}
 	err := checkBucket(username, password, bucket)
 	if err != nil {
-		fmt.Println(1)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	f, err := c.FormFile("file")
 	if err != nil {
-		fmt.Println(2)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	fileIo, err := f.Open()
 	if err != nil {
-		fmt.Println(3)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	_type, err := utils.GetFileContentType(fileIo)
 	if err != nil {
-		fmt.Println(4)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -89,25 +88,21 @@ func Upload(c *gin.Context) {
 
 	name := utils.RandStr(32)
 	split := strings.Split(f.Filename, ".")
-	fmt.Println(split)
 
 	if len(split) > 1 {
 		name = name + "." + split[len(split)-1]
 	}
 	client, _, err := db.InitMinioClient(username, password)
 	if err != nil {
-		fmt.Println(5)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	fmt.Println(f.Filename)
 	_, err = client.PutObject(context.Background(), bucket, name, fileIo, f.Size, minio.PutObjectOptions{ContentType: _type})
 	if err != nil {
-		fmt.Println(6)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.IndentedJSON(http.StatusOK, "/preview/"+bucket+"/"+name)
+	c.IndentedJSON(http.StatusOK, UploadResponse{Preview: "/preview/" + bucket + "/" + name})
 }
 
 func Preview(c *gin.Context) {
@@ -240,7 +235,6 @@ func CreateJson(c *gin.Context) {
 	object, err := client.PutObject(context.Background(), bucket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
 
 	if err != nil {
-		fmt.Println(err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -294,7 +288,6 @@ func ForceJson(c *gin.Context) {
 	}
 	object, err := client.PutObject(context.Background(), bucket, name, _data, int64(len(str)), minio.PutObjectOptions{ContentType: contentJSONType})
 	if err != nil {
-		fmt.Println(err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}

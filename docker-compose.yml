@@ -10,7 +10,6 @@ services:
     restart: always
     volumes:
       - ./minio/data:/data
-      - ./test:/test
     # environment:
     #   MINIO_ROOT_USER: ${MINIO_ROOT_USER}
     #   MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -27,8 +26,6 @@ services:
     command: /bin/bash -c "/go/main"
     environment:
       MINIO_URL: ${MINIO_URL}
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       EXPLORER_SERVER_PORT: ${EXPLORER_SERVER_PORT}
       MINIO_SSL: ${MINIO_SSL}
 

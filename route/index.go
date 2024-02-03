@@ -3,7 +3,6 @@ package route
 import (
 	"encoding/base64"
 	"file/services"
-	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -11,51 +10,57 @@ import (
 
 func authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取 Authorization 头的值
-		authHeader := c.GetHeader("Authorization")
-
-		// 检查 Authorization 头是否存在
-		if authHeader == "" {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
+		if c.Request.Method == "GET" {
+			c.Next()
 			return
+		} else {
+			// 获取 Authorization 头的值
+			authHeader := c.GetHeader("Authorization")
+
+			// 检查 Authorization 头是否存在
+			if authHeader == "" {
+				c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
+				return
+			}
+
+			// 检查 Authorization 头的格式是否为 "Basic <base64-encoded-credentials>"
+			authParts := strings.Fields(authHeader)
+			if len(authParts) != 2 || authParts[0] != "Basic" {
+				c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Authorization Header"})
+				return
+			}
+
+			// 解码 base64 编码的凭据
+			credentials, err := base64.StdEncoding.DecodeString(authParts[1])
+			if err != nil {
+				c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Base64 Encoding"})
+				return
+			}
+
+			// 将凭据拆分为用户名和密码
+			credParts := strings.SplitN(string(credentials), ":", 2)
+			if len(credParts) != 2 {
+				c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Credentials Format"})
+				return
+			}
+
+			username := credParts[0]
+			password := credParts[1]
+
+			// 在实际应用中，你可以在这里验证用户名和密码
+			// 这里只是一个简单的示例，实际应用中应使用更安全的认证方式
+
+			// fmt.Println("Username:", username)
+			// fmt.Println("Password:", password)
+
+			// 将用户名和密码存储到 Context 中，以便在后续的处理函数中使用
+			c.Set("username", username)
+			c.Set("password", password)
+
+			// 认证通过，继续执行后续中间件和处理程序
+			c.Next()
 		}
 
-		// 检查 Authorization 头的格式是否为 "Basic <base64-encoded-credentials>"
-		authParts := strings.Fields(authHeader)
-		if len(authParts) != 2 || authParts[0] != "Basic" {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Authorization Header"})
-			return
-		}
-
-		// 解码 base64 编码的凭据
-		credentials, err := base64.StdEncoding.DecodeString(authParts[1])
-		if err != nil {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Base64 Encoding"})
-			return
-		}
-
-		// 将凭据拆分为用户名和密码
-		credParts := strings.SplitN(string(credentials), ":", 2)
-		if len(credParts) != 2 {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Credentials Format"})
-			return
-		}
-
-		username := credParts[0]
-		password := credParts[1]
-
-		// 在实际应用中，你可以在这里验证用户名和密码
-		// 这里只是一个简单的示例，实际应用中应使用更安全的认证方式
-
-		fmt.Println("Username:", username)
-		fmt.Println("Password:", password)
-
-		// 将用户名和密码存储到 Context 中，以便在后续的处理函数中使用
-		c.Set("username", username)
-		c.Set("password", password)
-
-		// 认证通过，继续执行后续中间件和处理程序
-		c.Next()
 	}
 }
 func CORSMiddleware() gin.HandlerFunc {

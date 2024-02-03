@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"mime/multipart"
 	"os"
 	"strconv"
@@ -85,6 +84,6 @@ func InitMinioPreviewClient() {
 func Close(file multipart.File) {
 	err := file.Close()
 	if err != nil {
-		fmt.Println(err.Error())
+		// fmt.Println(err.Error())
 	}
 }

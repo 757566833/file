@@ -14,7 +14,7 @@ var Logger *zap.Logger
 func InitLogger() {
 	Log_Path := os.Getenv("LOG_PATH")
 	logger, _ := zap.NewProduction()
-	fmt.Println(Log_Path)
+	// fmt.Println(Log_Path)
 	config := fmt.Sprintf(`{
 		"level": "debug",
 		"encoding": "json",
