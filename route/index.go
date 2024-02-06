@@ -86,8 +86,8 @@ func InitRouter() *gin.Engine {
 	router.Use(authMiddleware())
 	router.GET("/all/:bucket", services.All)
 	router.POST("/upload/:bucket", services.Upload)
-	router.GET("/preview/:bucket/:file", services.Preview)
-	router.GET("/download/:bucket/:file", services.Download)
+	router.GET("/preview/:bucket/*file", services.Preview)
+	router.GET("/download/:bucket/*file", services.Download)
 	router.POST("/create/json/:bucket", services.CreateJson)
 	router.POST("/force/json/:bucket", services.ForceJson)
 	return router
