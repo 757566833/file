@@ -133,6 +133,59 @@ func Preview(c *gin.Context) {
 	c.DataFromReader(http.StatusOK, objectInfo.Size, objectInfo.Metadata.Get("Content-Type"), object, extraHeaders)
 
 }
+
+type DeleteFIleStruct struct {
+	Filename string `json:"filename"`
+}
+
+func Delete(c *gin.Context) {
+	// c.IndentedJSON(http.StatusOK, "success")
+	bucket := c.Param("bucket")
+	usernameRaw, ok := c.Get("username")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	passwordRaw, ok := c.Get("password")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	username, ok := usernameRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	password, ok := passwordRaw.(string)
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, "")
+		return
+	}
+	err := checkBucket(username, password, bucket)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var requestBody DeleteFIleStruct
+	if err := c.BindJSON(&requestBody); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	client, _, err := db.InitMinioClient(username, password)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	err = client.RemoveObject(context.Background(), bucket, requestBody.Filename, minio.RemoveObjectOptions{})
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, "success")
+}
+
 func Download(c *gin.Context) {
 	bucket := c.Param("bucket")
 	file := c.Param("file")

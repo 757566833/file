@@ -70,7 +70,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -83,11 +83,12 @@ func CORSMiddleware() gin.HandlerFunc {
 func InitRouter() *gin.Engine {
 	router := gin.Default()
 	router.Use(CORSMiddleware())
-	router.Use(authMiddleware())
 	router.GET("/all/:bucket", services.All)
-	router.POST("/upload/:bucket", services.Upload)
 	router.GET("/preview/:bucket/*file", services.Preview)
 	router.GET("/download/:bucket/*file", services.Download)
+	router.Use(authMiddleware())
+	router.DELETE("/remove/:bucket", services.Delete)
+	router.POST("/upload/:bucket", services.Upload)
 	router.POST("/create/json/:bucket", services.CreateJson)
 	router.POST("/force/json/:bucket", services.ForceJson)
 	return router
